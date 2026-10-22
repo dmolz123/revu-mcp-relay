@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revu Cloud AI Relay</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --panel: #ffffff; --ink: #1b2430; --muted: #6b7686; --line: #e1e6ee;
+    --head: #14202e; --accent: #1f6feb; --ok: #1a7f37; --bad: #cf222e; --warn: #b7791f;
+    --cloud: #6f42c1; --relay: #1f6feb; --desk: #0e7c86; --revu: #c4581b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f141b; --panel: #161d27; --ink: #e6ebf2; --muted: #93a0b2; --line: #263142; --head: #0a0f15; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: var(--head); color: #fff; padding: 12px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header .sub { color: #9fb0c6; font-size: 12px; }
+  .pills { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #243246; color: #cdd8e6; }
+  .pill.ok { background: #12391f; color: #7ee2a0; } .pill.bad { background: #4a1418; color: #ff9aa1; }
+
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .node { text-align: center; position: relative; padding: 8px 6px; }
+  .node:not(:last-child)::after { content: ""; position: absolute; top: 26px; right: -10%; width: 20%; height: 2px; background: var(--line); }
+  .node .dot { width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 6px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px; transition: transform .2s, box-shadow .2s; }
+  .node.active .dot { transform: scale(1.18); box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 18%, transparent); }
+  .node .name { font-weight: 600; font-size: 13px; } .node .desc { color: var(--muted); font-size: 11px; }
+  .n-cloud .dot { background: var(--cloud); color: var(--cloud); } .n-cloud .dot span { color: #fff; }
+  .n-relay .dot { background: var(--relay); color: var(--relay); } .n-relay .dot span { color: #fff; }
+  .n-desk .dot { background: var(--desk); color: var(--desk); } .n-desk .dot span { color: #fff; }
+  .n-revu .dot { background: var(--revu); color: var(--revu); } .n-revu .dot span { color: #fff; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; padding: 16px 20px; height: calc(100vh - 170px); min-height: 480px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); display: flex; flex-direction: column; min-height: 0; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  #chat { flex: 1; overflow-y: auto; padding: 14px; }
+  .msg { margin-bottom: 14px; } .msg .who { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .msg.user .bubble { background: color-mix(in srgb, var(--accent) 12%, var(--panel)); border-radius: 10px; padding: 8px 12px; display: inline-block; }
+  .bubble table { border-collapse: collapse; margin: 6px 0; font-size: 13px; }
+  .bubble th, .bubble td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+  .bubble th { background: color-mix(in srgb, var(--ink) 6%, var(--panel)); }
+  .bubble tr:nth-child(even) td { background: color-mix(in srgb, var(--ink) 3%, var(--panel)); }
+  .bubble code { background: color-mix(in srgb, var(--ink) 8%, var(--panel)); padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+  .chip { display: inline-block; font: 12px ui-monospace, Consolas, monospace; background: color-mix(in srgb, var(--desk) 12%, var(--panel)); color: var(--desk); border-radius: 6px; padding: 2px 8px; margin: 2px 4px 2px 0; }
+  .chip.err { color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, var(--panel)); }
+  .suggest { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 10px; }
+  .suggest button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  form { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  input[type=text], input[type=password] { flex: 1; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+  button.primary { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 0 16px; font-weight: 600; cursor: pointer; }
+  button.primary:disabled { opacity: .5; cursor: default; }
+
+  #trace { flex: 1; overflow-y: auto; padding: 8px 0; font-size: 12px; }
+  .evt { display: grid; grid-template-columns: 62px 120px 1fr; gap: 8px; padding: 5px 14px; border-bottom: 1px solid var(--line); }
+  .evt:nth-child(even) { background: color-mix(in srgb, var(--ink) 2%, var(--panel)); }
+  .evt .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .evt .h { font-weight: 600; }
+  .evt .d { color: var(--muted); word-break: break-word; } .evt .d b { color: var(--ink); font-weight: 600; }
+  .evt.replay { opacity: .75; }
+  .h-cloud { color: var(--cloud); } .h-relay { color: var(--relay); } .h-desk { color: var(--desk); } .h-bad { color: var(--bad); }
+  .thinking { color: var(--muted); font-style: italic; }
+  #keybar { display: none; padding: 10px 20px; background: color-mix(in srgb, var(--warn) 14%, var(--panel)); color: var(--ink); gap: 8px; align-items: center; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; height: auto; } #chat, #trace { max-height: 60vh; } .flow { grid-template-columns: repeat(2, 1fr); } .node::after { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Revu → Cloud AI via secure relay</h1>
+    <div class="sub">Proof of concept · stands in for an M365 Copilot / Copilot Studio agent</div>
+  </div>
+  <div class="pills">
+    <span class="pill" id="p-bridge">Desktop: …</span>
+    <span class="pill" id="p-tools">Allowlist: …</span>
+    <span class="pill" id="p-model">Model: …</span>
+  </div>
+</header>
+<div id="keybar"><span>Access key:</span><input type="password" id="key" placeholder="CHAT_KEY"><button class="primary" id="saveKey">Save</button></div>
+
+<section class="flow">
+  <div class="node n-cloud" id="n-cloud"><div class="dot"><span>AI</span></div><div class="name">Cloud AI</div><div class="desc">Claude · remote MCP client</div></div>
+  <div class="node n-relay" id="n-relay"><div class="dot"><span>R</span></div><div class="name">Relay (cloud)</div><div class="desc">Auth · allowlist · audit</div></div>
+  <div class="node n-desk" id="n-desk"><div class="dot"><span>B</span></div><div class="name">Desktop bridge</div><div class="desc">Outbound WSS only</div></div>
+  <div class="node n-revu" id="n-revu"><div class="dot"><span>Rv</span></div><div class="name">Bluebeam Revu</div><div class="desc">Local MCP server · active PDF</div></div>
+</section>
+
+<main>
+  <section class="card">
+    <h2>Ask about the active drawing</h2>
+    <div id="chat"></div>
+    <div class="suggest" id="suggest">
+      <button>What document is open, and how many pages?</button>
+      <button>Summarize the markups by status and author.</button>
+      <button>Read the title block on page 1 and flag anything missing.</button>
+      <button>Find "NOT TO SCALE" and highlight it in yellow.</button>
+    </div>
+    <form id="form"><input type="text" id="q" placeholder="e.g. List open markups on page 2" autocomplete="off"><button class="primary" id="send">Send</button></form>
+  </section>
+  <section class="card">
+    <h2>Live hop trace (relay audit log)</h2>
+    <div id="trace"></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+let key = '';
+try { key = localStorage.getItem('relayChatKey') || ''; } catch (_) {}
+const history = [];
+
+function esc(s) { return String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])); }
+
+// Small markdown subset: headings, bold, inline code, bullet lists, pipe tables.
+function md(src) {
+  const lines = src.split('\n'); let out = ''; let i = 0;
+  const inline = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^\s*\|.*\|\s*$/.test(l) && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] || '')) {
+      const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => inline(c.trim()));
+      out += '<table><tr>' + cells(l).map(c => `<th>${c}</th>`).join('') + '</tr>'; i += 2;
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { out += '<tr>' + cells(lines[i]).map(c => `<td>${c}</td>`).join('') + '</tr>'; i++; }
+      out += '</table>'; continue;
+    }
+    if (/^\s*[-*] /.test(l)) { out += '<ul>'; while (i < lines.length && /^\s*[-*] /.test(lines[i])) { out += `<li>${inline(lines[i].replace(/^\s*[-*] /, ''))}</li>`; i++; } out += '</ul>'; continue; }
+    const h = l.match(/^(#{1,4})\s+(.*)/);
+    if (h) { out += `<p><b>${inline(h[2])}</b></p>`; i++; continue; }
+    if (l.trim()) out += `<p>${inline(l)}</p>`;
+    i++;
+  }
+  return out;
+}
+
+function addMsg(role, html) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  el.innerHTML = `<div class="who">${role === 'user' ? 'You' : 'Cloud AI'}</div><div class="bubble">${html}</div>`;
+  $('#chat').appendChild(el); $('#chat').scrollTop = 1e9;
+  return el;
+}
+
+function renderAssistant(content) {
+  let html = '';
+  for (const b of content) {
+    if (b.type === 'text') html += md(b.text);
+    else if (b.type === 'mcp_tool_use') html += `<span class="chip">⚙ ${esc(b.name)}</span>`;
+    else if (b.type === 'mcp_tool_result' && b.is_error) html += `<span class="chip err">tool error</span>`;
+  }
+  return html || '<span class="thinking">(no text returned)</span>';
+}
+
+const hopClass = h => /BLOCKED|REJECTED|error/i.test(h) ? 'h-bad' : /desktop|bridge/i.test(h) ? 'h-desk' : /cloud AI|user/i.test(h) ? 'h-cloud' : 'h-relay';
+const activeNode = h => /^relay→desktop/.test(h) ? 'n-desk' : /^desktop→relay/.test(h) ? 'n-revu' : /^cloud→relay/.test(h) ? 'n-relay' : /cloud AI|user/.test(h) ? 'n-cloud' : null;
+
+function addEvent(e) {
+  const row = document.createElement('div');
+  row.className = 'evt' + (e.replay ? ' replay' : '');
+  const detail = [e.tool && `<b>${esc(e.tool)}</b>`, e.method && `<b>${esc(e.method)}</b>`, e.status && esc(e.status),
+    e.ms != null && `${e.ms} ms`, e.tokens && esc(e.tokens), e.args && `args ${esc(e.args)}`, e.result && `→ ${esc(e.result)}`].filter(Boolean).join(' · ');
+  row.innerHTML = `<span class="t">${new Date(e.ts).toLocaleTimeString()}</span><span class="h ${hopClass(e.hop)}">${esc(e.hop)}</span><span class="d">${detail}</span>`;
+  $('#trace').appendChild(row); $('#trace').scrollTop = 1e9;
+  const n = !e.replay && activeNode(e.hop);
+  if (n) { const el = document.getElementById(n); el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 900); }
+  if (/bridge (connected|disconnected)/.test(e.hop)) refreshStatus();
+}
+
+async function refreshStatus() {
+  const s = await fetch('/api/status').then(r => r.json());
+  const b = $('#p-bridge');
+  b.textContent = s.bridge.connected ? `Desktop: ${s.bridge.host} connected` : 'Desktop: not connected';
+  b.className = 'pill ' + (s.bridge.connected ? 'ok' : 'bad');
+  $('#p-tools').textContent = `Allowlist: ${s.allowedTools.length} tools`;
+  $('#p-tools').title = s.allowedTools.join(', ');
+  $('#p-model').textContent = `Model: ${s.model}`;
+  if (s.chatKeyRequired && !key) $('#keybar').style.display = 'flex';
+  return s;
+}
+
+let es;
+function connectEvents() {
+  if (es) es.close();
+  $('#trace').innerHTML = '';
+  es = new EventSource('/api/events' + (key ? `?key=${encodeURIComponent(key)}` : ''));
+  es.onmessage = m => addEvent(JSON.parse(m.data));
+}
+
+async function ask(text) {
+  if (!text.trim()) return;
+  $('#suggest').style.display = 'none';
+  addMsg('user', esc(text));
+  history.push({ role: 'user', content: text });
+  const pending = addMsg('assistant', '<span class="thinking">Working through the relay…</span>');
+  $('#send').disabled = true;
+  try {
+    const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-chat-key': key }, body: JSON.stringify({ messages: history }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    history.push(data.assistant);
+    pending.querySelector('.bubble').innerHTML = renderAssistant(data.assistant.content);
+  } catch (err) {
+    history.pop();
+    pending.querySelector('.bubble').innerHTML = `<span class="chip err">${esc(err.message)}</span>`;
+  } finally {
+    $('#send').disabled = false; $('#chat').scrollTop = 1e9;
+  }
+}
+
+$('#form').addEventListener('submit', e => { e.preventDefault(); const q = $('#q').value; $('#q').value = ''; ask(q); });
+$('#suggest').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') ask(e.target.textContent); });
+$('#saveKey').addEventListener('click', () => {
+  key = $('#key').value.trim();
+  try { localStorage.setItem('relayChatKey', key); } catch (_) {}
+  $('#keybar').style.display = 'none'; connectEvents();
+});
+
+refreshStatus(); connectEvents();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "relayUrl": "wss://YOUR-RELAY.onrender.com/bridge",
+  "bridgeToken": "same value as BRIDGE_TOKEN on the relay",
+  "mcpServerPath": "C:\Program Files\Bluebeam Software\Bluebeam Revu\21\Revu\mcp\Bluebeam MCP Server.exe",
+  "allowedTools": []
+}

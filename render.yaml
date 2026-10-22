@@ -1,0 +1,22 @@
+# Render Blueprint for the cloud relay. Set the secret values in the Render
+# dashboard. RENDER_EXTERNAL_URL is provided by Render and becomes the public
+# MCP endpoint (<url>/mcp) that Claude connects to.
+services:
+  - type: web
+    name: revu-mcp-relay
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: ANTHROPIC_API_KEY   # Claude API key (the cloud AI)
+        sync: false
+      - key: MCP_TOKEN           # bearer the cloud AI presents on /mcp
+        generateValue: true
+      - key: BRIDGE_TOKEN        # shared secret for the desktop bridge
+        generateValue: true
+      - key: CHAT_KEY            # access key for the demo page
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-opus-5-5
