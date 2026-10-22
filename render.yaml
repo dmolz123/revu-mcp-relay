@@ -17,6 +17,6 @@ services:
       - key: BRIDGE_TOKEN        # shared secret for the desktop bridge
         generateValue: true
       - key: CHAT_KEY            # access key for the demo page
-        sync: false
+        generateValue: true
       - key: CLAUDE_MODEL
         value: claude-opus-5-5

@@ -24,7 +24,7 @@ Override with `ALLOWED_TOOLS` (comma list).
 ## Deploy the relay (Render)
 
 1. Push this folder to a GitHub repo, then in Render choose **New → Blueprint** and point it at the repo. It uses `render.yaml`.
-2. Set `ANTHROPIC_API_KEY` and `CHAT_KEY`. Render generates `MCP_TOKEN` and `BRIDGE_TOKEN`. Copy `BRIDGE_TOKEN` for step 3.
+2. Paste your `ANTHROPIC_API_KEY` when Render asks. Render generates `MCP_TOKEN`, `BRIDGE_TOKEN` and `CHAT_KEY`. Copy `BRIDGE_TOKEN` for step 3.
 3. Open `https://<service>.onrender.com/api/status` and check that `mcpUrl` shows the public URL.
 
 ## Run the bridge (on the PC with Revu open)
