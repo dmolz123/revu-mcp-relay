@@ -1,9 +1,15 @@
 // Plays the role of a cloud MCP client against the relay's /mcp endpoint,
 // the same calls Claude's MCP connector (or Copilot Studio) makes.
 //   RELAY_HTTP=http://localhost:8790 MCP_TOKEN=... node scripts/smoke-test.js
+// Without env vars it reads relayUrl + mcpToken from bridge/config.json.
 
-const base = (process.env.RELAY_HTTP || 'http://localhost:8790').replace(/\/$/, '');
-const token = process.env.MCP_TOKEN || '';
+const fs = require('fs');
+const path = require('path');
+const cfgPath = path.join(__dirname, '..', 'bridge', 'config.json');
+const cfg = fs.existsSync(cfgPath) ? JSON.parse(fs.readFileSync(cfgPath, 'utf8')) : {};
+const fromBridgeUrl = cfg.relayUrl && cfg.relayUrl.replace(/^ws/, 'http').replace(/\/bridge$/, '');
+const base = (process.env.RELAY_HTTP || fromBridgeUrl || 'http://localhost:8790').replace(/\/$/, '');
+const token = process.env.MCP_TOKEN || cfg.mcpToken || '';
 let id = 1;
 
 async function rpc(method, params, auth = token) {
