@@ -174,7 +174,11 @@ async function refreshStatus() {
   b.className = 'pill ' + (s.bridge.connected ? 'ok' : 'bad');
   $('#p-tools').textContent = `Allowlist: ${s.allowedTools.length} tools`;
   $('#p-tools').title = s.allowedTools.join(', ');
-  $('#p-model').textContent = `Model: ${s.model}`;
+  $('#p-model').textContent = s.aiConfigured ? `Model: ${s.model}` : 'AI: off (no API key)';
+  $('#p-model').className = 'pill' + (s.aiConfigured ? '' : ' bad');
+  if (!s.aiConfigured && !$('#chat').children.length) {
+    addMsg('assistant', '<span class="thinking">The cloud AI is switched off: no ANTHROPIC_API_KEY is set on the relay. The relay, bridge and trace still work, so try <code>npm run smoke</code> against this URL to watch calls reach Revu.</span>');
+  }
   if (s.chatKeyRequired && !key) $('#keybar').style.display = 'flex';
   return s;
 }
