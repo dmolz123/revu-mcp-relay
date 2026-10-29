@@ -142,8 +142,20 @@ function connect() {
     headers: cfg.token ? { Authorization: `Bearer ${cfg.token}` } : {}
   });
 
+  // The relay pings every 25 s. If pings stop (relay restarted or redeployed
+  // behind a proxy that kept our side of the socket open), drop and reconnect.
+  let lastSeen = Date.now();
+  ws.on('ping', () => { lastSeen = Date.now(); });
+  const watchdog = setInterval(() => {
+    if (Date.now() - lastSeen > 70000) {
+      log(c.yellow, 'No ping from relay for 70 s; reconnecting.');
+      ws.terminate();
+    }
+  }, 10000);
+
   ws.on('open', async () => {
     backoff = 1000;
+    lastSeen = Date.now();
     let toolCount = 0;
     try {
       await ensureMcp();
@@ -164,6 +176,7 @@ function connect() {
   });
 
   ws.on('close', (code, reason) => {
+    clearInterval(watchdog);
     log(c.yellow, 'Relay connection closed', `${code} ${reason || ''}`);
     if (code === 4000) return process.exit(0); // replaced by another bridge
     setTimeout(connect, backoff);
