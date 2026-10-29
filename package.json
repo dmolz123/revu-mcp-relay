@@ -5,11 +5,11 @@
   "description": "PoC: expose Bluebeam Revu's local MCP server to a cloud AI through a secure relay",
   "scripts": {
     "start": "node relay/server.js",
-    "bridge": "node bridge/bridge.js",
-    "smoke": "node scripts/smoke-test.js"
+    "bridge": "node --use-system-ca bridge/bridge.js",
+    "smoke": "node --use-system-ca scripts/smoke-test.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.15"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
